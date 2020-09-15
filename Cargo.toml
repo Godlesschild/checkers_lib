@@ -1,0 +1,7 @@
+[package]
+name = "checkers_lib"
+version = "0.1.0"
+authors = ["Godlesschild"]
+edition = "2018"
+
+[dependencies]
