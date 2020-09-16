@@ -90,9 +90,7 @@ impl std::fmt::Display for Cell {
 }
 
 impl Piece {
-    fn possible_moves(&self, board: &Board) -> Vec<Move> {
-        let mut moves = Vec::new();
-
+    fn possible_positions(&self) -> Vec<(usize, usize)> {
         let next_y = if self.is_white && !self.is_king {
             if self.position.1 > 0 {
                 self.position.1 - 1
@@ -113,7 +111,13 @@ impl Piece {
             possible_positions.push((self.position.0 - 1, next_y))
         }
 
-        for next_position in possible_positions.iter() {
+        possible_positions
+    }
+
+    fn possible_moves(&self, board: &Board) -> Vec<Move> {
+        let mut moves = Vec::new();
+
+        for next_position in self.possible_positions().iter() {
             let to_left = (next_position.0 as i8 - self.position.0 as i8) < 0;
 
             match board.grid[next_position.1][next_position.0] {
