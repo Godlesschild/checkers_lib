@@ -159,7 +159,7 @@ impl Piece {
                         },
                         if self.is_white {
                             if next_position.1 > 0 {
-                                next_position.0 - 1
+                                next_position.1 - 1
                             } else {
                                 break;
                             }
