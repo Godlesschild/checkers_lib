@@ -84,7 +84,7 @@ impl Board {
         }
     }
 
-    pub fn applied_move(&self, apply: Move) -> Self {
+    fn applied_move(&self, apply: Move) -> Self {
         let mut board = self.clone();
 
         board.apply_move(apply);

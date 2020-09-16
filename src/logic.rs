@@ -32,6 +32,10 @@ impl Checkers {
         }
     }
 
+    pub fn draw(&self, draw_numbers: bool) {
+        self.board.draw(draw_numbers);
+    }
+
     pub fn possible_moves(&self) -> Vec<Move> {
         let mut moves = Vec::new();
 
@@ -46,5 +50,16 @@ impl Checkers {
         }
 
         moves
+    }
+
+    pub fn apply_move(&mut self, apply: Move) {
+        self.board.apply_move(apply);
+    }
+
+    pub fn applied_move(&self, apply: Move) -> Self {
+        Checkers {
+            board: self.board.applied_move(apply),
+            current_white: !self.current_white,
+        }
     }
 }
