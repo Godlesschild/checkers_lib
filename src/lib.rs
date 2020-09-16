@@ -1,9 +1,7 @@
 #![feature(exclusive_range_pattern)]
 
-pub mod logic;
-
-pub use logic::Checkers;
-use logic::Move;
+pub mod interface;
+pub use interface::Checkers;
 
 #[derive(Clone)]
 pub struct Board {
@@ -21,6 +19,13 @@ pub struct Piece {
     is_king: bool,
     is_white: bool,
     position: (usize, usize),
+}
+
+pub struct Move<'a> {
+    pub old_pos: (usize, usize),
+    pub new_pos: (usize, usize),
+    pub piece: &'a Piece,
+    pub captures: Vec<(usize, usize)>,
 }
 
 impl Board {
@@ -90,19 +95,6 @@ impl Board {
         board.apply_move(apply);
 
         board
-    }
-}
-
-impl std::fmt::Display for Cell {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Cell::Empty => "_".to_string(),
-                Cell::Piece(piece) => piece.to_string(),
-            }
-        )
     }
 }
 
@@ -195,39 +187,5 @@ impl Piece {
         // TODO Add kings
 
         moves
-    }
-}
-
-impl std::fmt::Display for Piece {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                // White pieces
-                Piece {
-                    is_king: false,
-                    is_white: true,
-                    ..
-                } => "●",
-                Piece {
-                    is_king: true,
-                    is_white: true,
-                    ..
-                } => "◉",
-
-                // Black pieces
-                Piece {
-                    is_king: false,
-                    is_white: false,
-                    ..
-                } => "◯",
-                Piece {
-                    is_king: true,
-                    is_white: false,
-                    ..
-                } => "◎",
-            }
-        )
     }
 }
