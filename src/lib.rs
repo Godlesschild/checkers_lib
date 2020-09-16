@@ -150,7 +150,7 @@ impl Piece {
                         | (self.is_white && next_position.1 == 8)
                         | (is_white == self.is_white)
                     {
-                        break;
+                        continue;
                     };
 
                     let after_capture = (
@@ -158,7 +158,7 @@ impl Piece {
                             if next_position.0 > 0 {
                                 next_position.0 - 1
                             } else {
-                                break;
+                                continue;
                             }
                         } else {
                             next_position.0 + 1
@@ -167,7 +167,7 @@ impl Piece {
                             if next_position.1 > 0 {
                                 next_position.1 - 1
                             } else {
-                                break;
+                                continue;
                             }
                         } else {
                             next_position.1 + 1
