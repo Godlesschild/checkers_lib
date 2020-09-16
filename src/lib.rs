@@ -5,6 +5,7 @@ pub mod logic;
 pub use logic::Checkers;
 use logic::Move;
 
+#[derive(Clone)]
 pub struct Board {
     grid: [[Cell; 8]; 8],
 }
@@ -73,6 +74,22 @@ impl Board {
             println!()
         }
     }
+
+    fn apply_move(&mut self, apply: Move) {
+        self.grid[apply.new_pos.1][apply.new_pos.0] = self.grid[apply.old_pos.1][apply.old_pos.0];
+        self.grid[apply.old_pos.1][apply.old_pos.0] = Cell::Empty;
+
+        for (x, y) in apply.captures.iter() {
+            self.grid[*y][*x] = Cell::Empty;
+        }
+    }
+
+    pub fn applied_move(&self, apply: Move) -> Self {
+        let mut board = self.clone();
+
+        board.apply_move(apply);
+
+        board
     }
 }
 
