@@ -29,7 +29,7 @@ pub struct Move<'a> {
 }
 
 impl Board {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let mut board = Board {
             grid: [[Cell::Empty; 8]; 8],
         };
@@ -59,7 +59,7 @@ impl Board {
         board
     }
 
-    pub fn draw(&self, draw_numbers: bool) {
+    fn draw(&self, draw_numbers: bool) {
         for (num, row) in self.grid.iter().enumerate() {
             if draw_numbers {
                 print!("{} ", self.grid.len() - num)
