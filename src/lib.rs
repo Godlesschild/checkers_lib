@@ -53,13 +53,26 @@ impl Board {
         board
     }
 
-    pub fn draw(&self) {
-        for row in self.grid.iter() {
+    pub fn draw(&self, draw_numbers: bool) {
+        for (num, row) in self.grid.iter().enumerate() {
+            if draw_numbers {
+                print!("{} ", self.grid.len() - num)
+            }
+
             for cell in row.iter() {
                 print!("{} ", cell);
             }
             println!();
         }
+
+        if draw_numbers {
+            print!("  ");
+            for num in 1..=self.grid.len() {
+                print!("{} ", num)
+            }
+            println!()
+        }
+    }
     }
 }
 
