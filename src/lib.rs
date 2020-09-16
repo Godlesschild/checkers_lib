@@ -125,7 +125,7 @@ impl Piece {
                     old_pos: self.position,
                     new_pos: *next_position,
                     piece: &self,
-                    capture: None,
+                    captures: vec![],
                 }),
 
                 Cell::Piece(Piece { is_white, .. }) => {
@@ -165,7 +165,7 @@ impl Piece {
                                 old_pos: self.position,
                                 new_pos: after_capture,
                                 piece: &self,
-                                capture: Some((next_position.0, next_position.1)),
+                                captures: vec![(next_position.0, next_position.1)],
                             })
                         }
                     }

@@ -8,7 +8,7 @@ pub struct Move<'a> {
     pub old_pos: (usize, usize),
     pub new_pos: (usize, usize),
     pub piece: &'a Piece,
-    pub capture: Option<(usize, usize)>,
+    pub captures: Vec<(usize, usize)>,
 }
 
 impl<'a> std::fmt::Display for Move<'a> {
