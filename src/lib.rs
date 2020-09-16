@@ -30,13 +30,10 @@ pub struct Move<'a> {
 
 impl Board {
     fn new() -> Self {
-        let mut board = Board {
-            grid: [[Cell::Empty; 8]; 8],
-        };
-        let temp_grid: [[u8; 8]; 8] = [
-            [0, 1, 0, 1, 0, 1, 0, 1],
-            [1, 0, 1, 0, 1, 0, 1, 0],
-            [0, 1, 0, 1, 0, 1, 0, 1],
+        let template: [[u8; 8]; 8] = [
+            [0, 2, 0, 2, 0, 2, 0, 2],
+            [2, 0, 2, 0, 2, 0, 2, 0],
+            [0, 2, 0, 2, 0, 2, 0, 2],
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
             [1, 0, 1, 0, 1, 0, 1, 0],
@@ -44,12 +41,21 @@ impl Board {
             [1, 0, 1, 0, 1, 0, 1, 0],
         ];
 
+        Self::from_template(template)
+    }
+
+    fn from_template(template: [[u8; 8]; 8]) -> Self {
+        let mut board = Board {
+            grid: [[Cell::Empty; 8]; 8],
+        };
+
         for y in 0..8usize {
             for x in 0..8usize {
-                if temp_grid[y][x] == 1 {
+                let cell = template[y][x];
+                if cell != 0 {
                     board.grid[y][x] = Cell::Piece(Piece {
-                        is_king: false,
-                        is_white: y > 3,
+                        is_king: cell > 2,
+                        is_white: cell % 2 == 1,
                         position: (x, y),
                     })
                 }

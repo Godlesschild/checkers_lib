@@ -12,6 +12,13 @@ impl Checkers {
         }
     }
 
+    pub fn from_template(template: [[u8; 8]; 8]) -> Self {
+        Checkers {
+            board: Board::from_template(template),
+            current_white: true,
+        }
+    }
+
     pub fn draw(&self, draw_numbers: bool) {
         self.board.draw(draw_numbers);
     }
