@@ -117,13 +117,13 @@ impl Piece {
         };
 
         let mut possible_positions = Vec::new();
-        if let (0..8, 0..8) = (self.position.0 + 1, next_y) {
-            // right
-            possible_positions.push((self.position.0 + 1, next_y))
-        }
         if let (0..8, 0..8) = (self.position.0 as i8 - 1, next_y) {
             // left
             possible_positions.push((self.position.0 - 1, next_y))
+        }
+        if let (0..8, 0..8) = (self.position.0 + 1, next_y) {
+            // right
+            possible_positions.push((self.position.0 + 1, next_y))
         }
 
         possible_positions
