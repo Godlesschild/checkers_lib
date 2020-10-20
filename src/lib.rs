@@ -3,13 +3,7 @@ pub use interface::Checkers;
 
 #[derive(Clone)]
 pub struct Board {
-    grid: [[Cell; 8]; 8],
-}
-
-#[derive(Copy, Clone)]
-enum Cell {
-    Empty,
-    Piece(Piece),
+    grid: [[Option<Piece>; 8]; 8],
 }
 
 #[derive(Copy, Clone)]
@@ -44,14 +38,14 @@ impl Board {
 
     fn from_template(template: [[u8; 8]; 8]) -> Self {
         let mut board = Board {
-            grid: [[Cell::Empty; 8]; 8],
+            grid: [[None; 8]; 8],
         };
 
         for y in 0..8usize {
             for x in 0..8usize {
                 let cell = template[y][x];
                 if cell != 0 {
-                    board.grid[y][x] = Cell::Piece(Piece {
+                    board.grid[y][x] = Some(Piece {
                         is_king: cell > 2,
                         is_white: cell % 2 == 1,
                         position: (x, y),
@@ -70,7 +64,13 @@ impl Board {
             }
 
             for cell in row.iter() {
-                print!("{} ", cell);
+                print!(
+                    "{} ",
+                    match cell {
+                        None => "_".to_string(),
+                        Some(piece) => piece.to_string(),
+                    }
+                );
             }
             println!();
         }
@@ -86,10 +86,10 @@ impl Board {
 
     fn apply_move(&mut self, apply: Move) {
         self.grid[apply.new_pos.1][apply.new_pos.0] = self.grid[apply.old_pos.1][apply.old_pos.0];
-        self.grid[apply.old_pos.1][apply.old_pos.0] = Cell::Empty;
+        self.grid[apply.old_pos.1][apply.old_pos.0] = None;
 
         for (x, y) in apply.captures.iter() {
-            self.grid[*y][*x] = Cell::Empty;
+            self.grid[*y][*x] = None;
         }
     }
 
@@ -134,14 +134,14 @@ impl Piece {
             let to_left = (next_position.0 as i8 - self.position.0 as i8) < 0;
 
             match board.grid[next_position.1][next_position.0] {
-                Cell::Empty => moves.push(Move {
+                None => moves.push(Move {
                     old_pos: self.position,
                     new_pos: *next_position,
                     piece: &self,
                     captures: vec![],
                 }),
 
-                Cell::Piece(Piece { is_white, .. }) => {
+                Some(Piece { is_white, .. }) => {
                     // Check if it's possible to capture
 
                     if (self.is_white && next_position.1 == 0)
@@ -173,7 +173,7 @@ impl Piece {
                     );
 
                     if let (0..=7, 0..=7) = after_capture {
-                        if let Cell::Empty = board.grid[after_capture.1][after_capture.0] {
+                        if board.grid[after_capture.1][after_capture.0].is_none() {
                             moves.push(Move {
                                 old_pos: self.position,
                                 new_pos: after_capture,

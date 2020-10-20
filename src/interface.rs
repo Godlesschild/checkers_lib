@@ -1,4 +1,4 @@
-use crate::{Board, Cell, Move, Piece};
+use crate::{Board, Move, Piece};
 pub struct Checkers {
     board: Board,
     current_white: bool,
@@ -28,7 +28,7 @@ impl Checkers {
 
         for row in self.board.grid.iter() {
             for cell in row.iter() {
-                if let Cell::Piece(piece) = cell {
+                if let Some(piece) = cell {
                     if piece.is_white == self.current_white {
                         moves.append(&mut piece.possible_moves(&self.board))
                     }
@@ -48,19 +48,6 @@ impl Checkers {
             board: self.board.applied_move(apply),
             current_white: !self.current_white,
         }
-    }
-}
-
-impl std::fmt::Display for Cell {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Cell::Empty => "_".to_string(),
-                Cell::Piece(piece) => piece.to_string(),
-            }
-        )
     }
 }
 
