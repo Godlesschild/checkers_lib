@@ -13,6 +13,7 @@ pub struct Piece {
     position: (usize, usize),
 }
 
+#[derive(Clone)]
 pub struct Move<'a> {
     pub old_pos: (usize, usize),
     pub new_pos: (usize, usize),
@@ -102,92 +103,144 @@ impl Board {
 }
 
 impl Piece {
-    fn possible_positions(&self) -> Vec<(usize, usize)> {
-        let next_y = if self.is_white && !self.is_king {
-            if self.position.1 > 0 {
-                self.position.1 - 1
-            } else {
-                return Vec::new(); //* TEMPORARY before adding kings
-            }
+    fn next_y(piece: &Self, y: Option<usize>) -> usize {
+        let current_y = if let Some(y) = y { y } else { piece.position.1 };
+        if piece.is_white == piece.is_king {
+            current_y + 1
         } else {
-            self.position.1 + 1
-        };
-
-        let mut possible_positions = Vec::new();
-        if let (0..=7, 0..=7) = (self.position.0 as i8 - 1, next_y) {
-            // left
-            possible_positions.push((self.position.0 - 1, next_y))
+            current_y - 1
         }
-        if let (0..=7, 0..=7) = (self.position.0 + 1, next_y) {
-            // right
-            possible_positions.push((self.position.0 + 1, next_y))
-        }
+    }
 
-        possible_positions
+    fn check_capture<'a>(
+        piece: &'a Self,
+        board: &Board,
+        capture_pos: (usize, usize),
+        new_pos: (usize, usize),
+    ) -> Option<Move<'a>> {
+        if let (Some(other), None) = (
+            board.grid[capture_pos.1][capture_pos.0],
+            board.grid[new_pos.1][new_pos.0],
+        ) {
+            if piece.is_white != other.is_white {
+                return Some(Move {
+                    old_pos: piece.position,
+                    new_pos,
+                    piece,
+                    captures: vec![capture_pos],
+                });
+            }
+        }
+        return None;
+    }
+
+    fn possible_captures(&self, board: &Board) -> Vec<Move> {
+        let mut captures = Vec::new();
+
+        if !self.is_king {
+            let capture_y = Self::next_y(&self, None);
+            if capture_y >= 7 || capture_y <= 0 {
+                return Vec::new();
+            };
+
+            // To the left
+            if self.position.0 > 1 {
+                let capture_pos = (self.position.0 - 1, capture_y);
+                let new_pos = (capture_pos.0 - 1, Self::next_y(&self, Some(capture_pos.1)));
+
+                if let Some(capture) = Self::check_capture(&self, board, capture_pos, new_pos) {
+                    captures.push(capture);
+                }
+            }
+
+            // To the right
+            if self.position.0 < 6 {
+                let capture_pos = (self.position.0 + 1, capture_y);
+                let new_pos = (capture_pos.0 + 1, Self::next_y(&self, Some(capture_pos.1)));
+
+                if let Some(capture) = Self::check_capture(&self, board, capture_pos, new_pos) {
+                    captures.push(capture);
+                }
+            }
+
+            return captures;
+        } else {
+            return Vec::new(); // ! TEMPORARY
+                               // TODO Add kings
+        }
     }
 
     fn possible_moves(&self, board: &Board) -> Vec<Move> {
-        let mut moves = Vec::new();
+        let mut moves = self.possible_captures(board);
 
-        for next_position in self.possible_positions().iter() {
-            let to_left = (next_position.0 as i8 - self.position.0 as i8) < 0;
+        if !moves.is_empty() {
+            for (i, capture) in moves.clone().iter().enumerate() {
+                let board_next = board.applied_move(capture);
+                let piece_next = board_next.grid[capture.new_pos.1][capture.new_pos.0].unwrap();
 
-            match board.grid[next_position.1][next_position.0] {
-                None => moves.push(Move {
-                    old_pos: self.position,
-                    new_pos: *next_position,
-                    piece: &self,
-                    captures: vec![],
-                }),
+                let mut recursive_moves = piece_next.possible_moves(&board_next);
 
-                Some(Piece { is_white, .. }) => {
-                    // Check if it's possible to capture
-
-                    if (self.is_white && next_position.1 == 0)
-                        | (self.is_white && next_position.1 == 8)
-                        | (is_white == self.is_white)
-                    {
-                        continue;
-                    };
-
-                    let after_capture = (
-                        if to_left {
-                            if next_position.0 > 0 {
-                                next_position.0 - 1
-                            } else {
-                                continue;
-                            }
-                        } else {
-                            next_position.0 + 1
-                        },
-                        if self.is_white {
-                            if next_position.1 > 0 {
-                                next_position.1 - 1
-                            } else {
-                                continue;
-                            }
-                        } else {
-                            next_position.1 + 1
-                        },
-                    );
-
-                    if let (0..=7, 0..=7) = after_capture {
-                        if board.grid[after_capture.1][after_capture.0].is_none() {
-                            moves.push(Move {
-                                old_pos: self.position,
-                                new_pos: after_capture,
-                                piece: &self,
-                                captures: vec![(next_position.0, next_position.1)],
-                            })
-                        }
+                let mut captured_any = false;
+                for recursive_move in recursive_moves.iter() {
+                    if !recursive_move.captures.is_empty() {
+                        captured_any = true;
                     }
+                }
+
+                let Move { captures, .. } = moves.remove(i);
+
+                if captured_any {
+                    for recursive_move in recursive_moves.iter_mut() {
+                        let mut captures = captures.clone();
+                        captures.append(&mut recursive_move.captures);
+
+                        moves.push(Move {
+                            old_pos: self.position,
+                            new_pos: recursive_move.new_pos,
+                            piece: &self,
+                            captures,
+                        });
+                    }
+                } else {
+                    moves.push(Move {
+                        old_pos: self.position,
+                        new_pos: piece_next.position,
+                        piece: &self,
+                        captures: captures,
+                    })
+                }
+            }
+        } else {
+            let next_y = Self::next_y(&self, None);
+
+            // To the left
+            if self.position.0 > 0 {
+                let new_pos = (self.position.0 - 1, next_y);
+
+                if board.grid[new_pos.1][new_pos.0].is_none() {
+                    moves.push(Move {
+                        old_pos: self.position,
+                        new_pos,
+                        piece: &self,
+                        captures: Vec::new(),
+                    });
+                }
+            }
+
+            // To the right
+            if self.position.0 < 7 {
+                let new_pos = (self.position.0 + 1, next_y);
+
+                if board.grid[new_pos.1][new_pos.0].is_none() {
+                    moves.push(Move {
+                        old_pos: self.position,
+                        new_pos,
+                        piece: &self,
+                        captures: Vec::new(),
+                    });
                 }
             }
         }
-
-        // TODO Add recursion to check for multiple captures
-
-        // TODO Add kings
 
         moves
     }
