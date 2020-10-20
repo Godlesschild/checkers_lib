@@ -80,7 +80,7 @@ impl Board {
         println!()
     }
 
-    fn apply_move(&mut self, apply: Move) {
+    fn apply_move(&mut self, apply: &Move) {
         self.grid[apply.new_pos.1][apply.new_pos.0] = self.grid[apply.old_pos.1][apply.old_pos.0];
         self.grid[apply.old_pos.1][apply.old_pos.0] = None;
 
@@ -89,7 +89,7 @@ impl Board {
         }
     }
 
-    fn applied_move(&self, apply: Move) -> Self {
+    fn applied_move(&self, apply: &Move) -> Self {
         let mut board = self.clone();
 
         board.apply_move(apply);

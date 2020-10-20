@@ -39,11 +39,11 @@ impl Checkers {
         moves
     }
 
-    pub fn apply_move(&mut self, apply: Move) {
+    pub fn apply_move(&mut self, apply: &Move) {
         self.board.apply_move(apply);
     }
 
-    pub fn applied_move(&self, apply: Move) -> Self {
+    pub fn applied_move(&self, apply: &Move) -> Self {
         Checkers {
             board: self.board.applied_move(apply),
             current_white: !self.current_white,
