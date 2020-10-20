@@ -1,5 +1,3 @@
-#![feature(exclusive_range_pattern)]
-
 pub mod interface;
 pub use interface::Checkers;
 
@@ -117,11 +115,11 @@ impl Piece {
         };
 
         let mut possible_positions = Vec::new();
-        if let (0..8, 0..8) = (self.position.0 as i8 - 1, next_y) {
+        if let (0..=7, 0..=7) = (self.position.0 as i8 - 1, next_y) {
             // left
             possible_positions.push((self.position.0 - 1, next_y))
         }
-        if let (0..8, 0..8) = (self.position.0 + 1, next_y) {
+        if let (0..=7, 0..=7) = (self.position.0 + 1, next_y) {
             // right
             possible_positions.push((self.position.0 + 1, next_y))
         }
@@ -174,7 +172,7 @@ impl Piece {
                         },
                     );
 
-                    if let (0..8, 0..8) = after_capture {
+                    if let (0..=7, 0..=7) = after_capture {
                         if let Cell::Empty = board.grid[after_capture.1][after_capture.0] {
                             moves.push(Move {
                                 old_pos: self.position,
