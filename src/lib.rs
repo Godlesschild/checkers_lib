@@ -81,7 +81,10 @@ impl Board {
     }
 
     fn apply_move(&mut self, apply: &Move) {
-        self.grid[apply.new_pos.1][apply.new_pos.0] = self.grid[apply.old_pos.1][apply.old_pos.0];
+        let mut moved_piece = self.grid[apply.old_pos.1][apply.old_pos.0].unwrap();
+        moved_piece.position = apply.new_pos;
+        self.grid[apply.new_pos.1][apply.new_pos.0] = Some(moved_piece);
+
         self.grid[apply.old_pos.1][apply.old_pos.0] = None;
 
         for (x, y) in apply.captures.iter() {
