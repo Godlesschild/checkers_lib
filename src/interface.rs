@@ -39,6 +39,29 @@ impl Checkers {
         moves
     }
 
+    pub fn allowed_moves(&self) -> Vec<Move> {
+        let possible_moves = self.possible_moves();
+        let mut allowed_moves = Vec::new();
+
+        let mut captured_any = false;
+        for i in possible_moves.iter() {
+            if !i.captures.is_empty() {
+                captured_any = true;
+            }
+        }
+
+        if captured_any {
+            for i in possible_moves.into_iter() {
+                if !i.captures.is_empty() {
+                    allowed_moves.push(i)
+                }
+            }
+            allowed_moves
+        } else {
+            possible_moves
+        }
+    }
+
     pub fn apply_move(&mut self, apply: &Move) {
         self.board.apply_move(apply);
     }
