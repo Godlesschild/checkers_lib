@@ -19,8 +19,8 @@ impl Checkers {
         }
     }
 
-    pub fn draw(&self, draw_numbers: bool) {
-        self.board.draw(draw_numbers);
+    pub fn draw(&self) {
+        self.board.draw();
     }
 
     pub fn possible_moves(&self) -> Vec<Move> {

@@ -57,11 +57,9 @@ impl Board {
         board
     }
 
-    fn draw(&self, draw_numbers: bool) {
+    fn draw(&self) {
         for (num, row) in self.grid.iter().enumerate() {
-            if draw_numbers {
-                print!("{} ", self.grid.len() - num)
-            }
+            print!("{} ", self.grid.len() - num);
 
             for cell in row.iter() {
                 print!(
@@ -75,13 +73,11 @@ impl Board {
             println!();
         }
 
-        if draw_numbers {
-            print!("  ");
-            for num in 1..=self.grid.len() {
-                print!("{} ", num)
-            }
-            println!()
+        print!("  ");
+        for num in 1..=self.grid.len() {
+            print!("{} ", num)
         }
+        println!()
     }
 
     fn apply_move(&mut self, apply: Move) {
