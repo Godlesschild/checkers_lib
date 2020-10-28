@@ -81,9 +81,9 @@ impl Board {
         moves
     }
 
-    pub fn allowed_moves(&self, current_white: bool) -> Vec<CheckersMove> {
+    pub fn legal_moves(&self, current_white: bool) -> Vec<CheckersMove> {
         let possible_moves = self.possible_moves(current_white);
-        let mut allowed_moves = Vec::new();
+        let mut legal_moves = Vec::new();
 
         let mut captured_any = false;
         for i in possible_moves.iter() {
@@ -95,10 +95,10 @@ impl Board {
         if captured_any {
             for i in possible_moves.into_iter() {
                 if !i.captures.is_empty() {
-                    allowed_moves.push(i)
+                    legal_moves.push(i)
                 }
             }
-            allowed_moves
+            legal_moves
         } else {
             possible_moves
         }
