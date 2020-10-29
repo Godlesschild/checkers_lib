@@ -1,15 +1,19 @@
-use crate::{Board, CheckersMove};
+use crate::{Board, CheckersMove, Position};
 
 #[derive(Copy, Clone)]
 pub struct Piece {
     pub is_king: bool,
     pub is_white: bool,
-    pub position: (usize, usize),
+    pub position: Position,
 }
 
 impl Piece {
     fn next_y(piece: &Self, y: Option<usize>) -> usize {
-        let current_y = if let Some(y) = y { y } else { piece.position.1 };
+        let current_y = if let Some(y) = y {
+            y
+        } else {
+            piece.position.as_coordinates().1
+        };
         if piece.is_white == piece.is_king {
             current_y + 1
         } else {
@@ -30,9 +34,9 @@ impl Piece {
             if piece.is_white != other.is_white {
                 return Some(CheckersMove {
                     old_pos: piece.position,
-                    new_pos,
+                    new_pos: Position::from_coordinates(new_pos).unwrap(),
                     piece,
-                    captures: vec![capture_pos],
+                    captures: vec![Position::from_coordinates(capture_pos).unwrap()],
                 });
             }
         }
@@ -48,9 +52,11 @@ impl Piece {
                 return Vec::new();
             };
 
+            let self_x = self.position.as_coordinates().0;
+
             // To the left
-            if self.position.0 > 1 {
-                let capture_pos = (self.position.0 - 1, capture_y);
+            if self_x > 1 {
+                let capture_pos = (self_x - 1, capture_y);
                 let new_pos = (capture_pos.0 - 1, Self::next_y(&self, Some(capture_pos.1)));
 
                 if let Some(capture) = Self::check_capture(&self, board, capture_pos, new_pos) {
@@ -59,8 +65,8 @@ impl Piece {
             }
 
             // To the right
-            if self.position.0 < 6 {
-                let capture_pos = (self.position.0 + 1, capture_y);
+            if self_x < 6 {
+                let capture_pos = (self_x + 1, capture_y);
                 let new_pos = (capture_pos.0 + 1, Self::next_y(&self, Some(capture_pos.1)));
 
                 if let Some(capture) = Self::check_capture(&self, board, capture_pos, new_pos) {
@@ -80,8 +86,10 @@ impl Piece {
 
         if !moves.is_empty() {
             for (i, capture) in moves.clone().iter().enumerate() {
+                let (x, y) = capture.new_pos.as_coordinates();
+
                 let board_next = board.applied_move(capture);
-                let piece_next = board_next.grid[capture.new_pos.1][capture.new_pos.0].unwrap();
+                let piece_next = board_next.grid[y][x].unwrap();
 
                 let mut recursive_moves = piece_next.possible_moves(&board_next);
 
@@ -117,15 +125,16 @@ impl Piece {
             }
         } else {
             let next_y = Self::next_y(&self, None);
+            let self_x = self.position.as_coordinates().0;
 
             // To the left
-            if self.position.0 > 0 {
-                let new_pos = (self.position.0 - 1, next_y);
+            if self_x > 0 {
+                let new_pos = (self_x - 1, next_y);
 
                 if board.grid[new_pos.1][new_pos.0].is_none() {
                     moves.push(CheckersMove {
                         old_pos: self.position,
-                        new_pos,
+                        new_pos: Position::from_coordinates(new_pos).unwrap(),
                         piece: &self,
                         captures: Vec::new(),
                     });
@@ -133,13 +142,13 @@ impl Piece {
             }
 
             // To the right
-            if self.position.0 < 7 {
-                let new_pos = (self.position.0 + 1, next_y);
+            if self_x < 7 {
+                let new_pos = (self_x + 1, next_y);
 
                 if board.grid[new_pos.1][new_pos.0].is_none() {
                     moves.push(CheckersMove {
                         old_pos: self.position,
-                        new_pos,
+                        new_pos: Position::from_coordinates(new_pos).unwrap(),
                         piece: &self,
                         captures: Vec::new(),
                     });

@@ -1,4 +1,4 @@
-use crate::{CheckersMove, Piece};
+use crate::{CheckersMove, Piece, Position};
 
 #[derive(Clone)]
 pub struct Board {
@@ -33,7 +33,7 @@ impl Board {
                     board.grid[y][x] = Some(Piece {
                         is_king: cell > 2,
                         is_white: cell % 2 == 1,
-                        position: (x, y),
+                        position: Position::from_coordinates((x, y)).unwrap(),
                     })
                 }
             }
@@ -105,14 +105,18 @@ impl Board {
     }
 
     pub fn apply_move(&mut self, apply: &CheckersMove) {
-        let mut moved_piece = self.grid[apply.old_pos.1][apply.old_pos.0].unwrap();
+        let (old_x, old_y) = apply.old_pos.as_coordinates();
+        let (new_x, new_y) = apply.new_pos.as_coordinates();
+
+        let mut moved_piece = self.grid[old_y][old_x].unwrap();
         moved_piece.position = apply.new_pos;
-        self.grid[apply.new_pos.1][apply.new_pos.0] = Some(moved_piece);
+        self.grid[new_y][new_x] = Some(moved_piece);
 
-        self.grid[apply.old_pos.1][apply.old_pos.0] = None;
+        self.grid[old_y][old_x] = None;
 
-        for (x, y) in apply.captures.iter() {
-            self.grid[*y][*x] = None;
+        for position in apply.captures.iter() {
+            let (x, y) = position.as_coordinates();
+            self.grid[y][x] = None;
         }
     }
 

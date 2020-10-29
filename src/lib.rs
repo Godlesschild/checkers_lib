@@ -6,3 +6,6 @@ pub use piece::Piece;
 
 mod checkers_move;
 pub use checkers_move::CheckersMove;
+
+mod position;
+pub use position::Position;
