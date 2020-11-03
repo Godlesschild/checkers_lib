@@ -1,47 +1,11 @@
-use crate::{CheckersMove, Piece, Position};
+use crate::{CheckersMove, Piece};
 
 #[derive(Clone)]
 pub struct Board {
-    pub grid: [[Option<Piece>; 8]; 8],
+    pub(crate) grid: [[Option<Piece>; 8]; 8],
 }
 
 impl Board {
-    pub fn new() -> Self {
-        let template: [[u8; 8]; 8] = [
-            [0, 2, 0, 2, 0, 2, 0, 2],
-            [2, 0, 2, 0, 2, 0, 2, 0],
-            [0, 2, 0, 2, 0, 2, 0, 2],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 0, 1, 0, 1, 0, 1, 0],
-            [0, 1, 0, 1, 0, 1, 0, 1],
-            [1, 0, 1, 0, 1, 0, 1, 0],
-        ];
-
-        Self::from_template(template)
-    }
-
-    pub fn from_template(template: [[u8; 8]; 8]) -> Self {
-        let mut board = Board {
-            grid: [[None; 8]; 8],
-        };
-
-        for y in 0..8usize {
-            for x in 0..8usize {
-                let cell = template[y][x];
-                if cell != 0 {
-                    board.grid[y][x] = Some(Piece {
-                        is_king: cell > 2,
-                        is_white: cell % 2 == 1,
-                        position: Position::from_coordinates((x, y)).unwrap(),
-                    })
-                }
-            }
-        }
-
-        board
-    }
-
     pub fn draw(&self) {
         for (num, row) in self.grid.iter().enumerate() {
             print!("{} ", self.grid.len() - num);

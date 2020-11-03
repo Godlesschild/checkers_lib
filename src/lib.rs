@@ -1,3 +1,6 @@
+mod board_builder;
+pub use board_builder::BoardBuilder;
+
 mod board;
 pub use board::Board;
 
