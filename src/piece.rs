@@ -21,7 +21,7 @@ impl Piece {
         }
     }
 
-    fn check_capture<'a>(
+    fn checked_capture<'a>(
         piece: &'a Self,
         board: &Board,
         capture_pos: (usize, usize),
@@ -40,6 +40,7 @@ impl Piece {
                 });
             }
         }
+
         return None;
     }
 
@@ -47,37 +48,29 @@ impl Piece {
         let mut captures = Vec::new();
 
         if !self.is_king {
-            let capture_y = Self::next_y(&self, None);
-            if capture_y >= 7 || capture_y <= 0 {
-                return Vec::new();
-            };
+            let (x, y) = self.position.as_coordinates();
+            let horizontal = [x > 1, x < 6]; // Leftward, rightward
+            let vertical = [y > 1, y < 6]; // Upward, downward
 
-            let self_x = self.position.as_coordinates().0;
+            for i in 0..4 {
+                if horizontal[i / 2] && vertical[i % 2] {
+                    let capture_x = if i / 2 == 0 { x - 1 } else { x + 1 };
+                    let capture_y = if i % 2 == 0 { y - 1 } else { y + 1 };
 
-            // To the left
-            if self_x > 1 {
-                let capture_pos = (self_x - 1, capture_y);
-                let new_pos = (capture_pos.0 - 1, Self::next_y(&self, Some(capture_pos.1)));
+                    let capture_pos = (capture_x, capture_y);
+                    let new_pos = (capture_x * 2 - x, capture_y * 2 - y);
 
-                if let Some(capture) = Self::check_capture(&self, board, capture_pos, new_pos) {
-                    captures.push(capture);
+                    if let Some(capture) = Self::checked_capture(&self, board, capture_pos, new_pos)
+                    {
+                        captures.push(capture);
+                    }
                 }
             }
 
-            // To the right
-            if self_x < 6 {
-                let capture_pos = (self_x + 1, capture_y);
-                let new_pos = (capture_pos.0 + 1, Self::next_y(&self, Some(capture_pos.1)));
-
-                if let Some(capture) = Self::check_capture(&self, board, capture_pos, new_pos) {
-                    captures.push(capture);
-                }
-            }
-
-            return captures;
+            captures
         } else {
-            return Vec::new(); // ! TEMPORARY
-                               // TODO Add kings
+            Vec::new() // ! TEMPORARY
+                       // TODO Add kings
         }
     }
 
