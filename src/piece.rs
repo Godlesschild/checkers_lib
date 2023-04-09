@@ -1,6 +1,10 @@
-use crate::{Board, CheckersMove, Position};
+use std::collections::HashSet;
 
-#[derive(Copy, Clone)]
+use itertools::iproduct;
+
+use crate::{Board, CheckersMove, Position, RulesError};
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Piece {
     pub is_king: bool,
     pub is_white: bool,
@@ -8,148 +12,207 @@ pub struct Piece {
 }
 
 impl Piece {
-    fn next_y(piece: &Self, y: Option<usize>) -> usize {
-        let current_y = if let Some(y) = y {
-            y
-        } else {
-            piece.position.as_coordinates().1
-        };
-        if piece.is_white == piece.is_king {
-            current_y + 1
-        } else {
-            current_y - 1
+    #[must_use]
+    pub fn new(is_king: bool, is_white: bool, position: Position) -> Self {
+        Self {
+            is_king,
+            is_white,
+            position,
         }
     }
 
-    fn checked_capture<'a>(
-        piece: &'a Self,
+    /// TODO
+    ///
+    /// # Errors
+    ///
+    /// - [`Error::Rules(Occupied)`][0] if another piece is obsturcting movement,
+    /// - [`Error::Rules(NotKing)`][1] if trying to move backwars without being a king,
+    /// - [`Error::Position(OutOfBounds)`][2] if `direction` points immediatly out of
+    ///   bounds.
+    ///
+    /// [0]: crate::RulesError::Occupied
+    /// [1]: crate::RulesError::NotKing
+    /// [2]: crate::position::Error::OutOfBounds
+    pub fn moves(
+        self,
         board: &Board,
-        capture_pos: (usize, usize),
-        new_pos: (usize, usize),
-    ) -> Option<CheckersMove<'a>> {
-        if let (Some(other), None) = (
-            board.grid[capture_pos.1][capture_pos.0],
-            board.grid[new_pos.1][new_pos.0],
-        ) {
-            if piece.is_white != other.is_white {
-                return Some(CheckersMove {
-                    old_pos: piece.position,
-                    new_pos: Position::from_coordinates(new_pos).unwrap(),
-                    piece,
-                    captures: vec![Position::from_coordinates(capture_pos).unwrap()],
-                });
+        direction: (i8, i8),
+    ) -> Result<Vec<CheckersMove>, crate::Error> {
+        if !self.is_king
+            && ((direction.1 > 0) && self.is_white || ((direction.1 < 0) && !self.is_white))
+        {
+            Err(RulesError::NotKing(self.position))?;
+        }
+
+        let mut new_pos = self.position.increment(direction)?;
+
+        if board.get_tile(new_pos).is_some() {
+            Err(RulesError::Occupied(new_pos))?;
+        }
+
+        let mut moves = vec![CheckersMove {
+            old: self,
+            new: Piece {
+                is_king: self.is_king || new_pos.is_promoting(self),
+                is_white: self.is_white,
+                position: new_pos,
+            },
+            captures: HashSet::new(),
+        }];
+
+        if self.is_king {
+            while let Ok(temp) = new_pos.increment(direction) {
+                new_pos = temp;
+
+                if board.get_tile(new_pos).is_some() {
+                    break;
+                }
+
+                let mut next_move = moves[0].clone();
+                next_move.new.position = new_pos;
+
+                moves.push(next_move);
             }
         }
 
-        return None;
+        Ok(moves)
     }
 
-    fn possible_captures(&self, board: &Board) -> Vec<CheckersMove> {
+    /// TODO
+    ///
+    /// # Errors
+    ///
+    /// - [`Error::Rules(SameColorCapture)`][0] if trying to capture piece of same color,
+    /// - [`Error::Rules(Empty)`][1] if there is nothing to capture in given `direction`,
+    /// - [`Error::Rules(Occupied)`][2] if the tile after capture is occupied,
+    /// - [`Error::Position(OutOfBounds)`][3] if `direction` points immediatly out of bounds or
+    ///   there is no tile to land on after capture.
+    ///
+    /// [0]: crate::RulesError::SameColorCapture
+    /// [1]: crate::RulesError::Empty
+    /// [2]: crate::RulesError::Occupied
+    /// [3]: crate::position::Error::OutOfBounds
+    pub fn capture_in_direction(
+        self,
+        board: &Board,
+        direction: (i8, i8),
+    ) -> Result<Vec<CheckersMove>, crate::Error> {
+        let mut capture_pos = self.position.increment(direction)?;
+
+        if self.is_king {
+            while board.get_tile(capture_pos).is_none() {
+                let Ok(next_capture_pos) = capture_pos.increment(direction) else {
+                    Err(RulesError::Empty(capture_pos))?
+                };
+
+                capture_pos = next_capture_pos;
+            }
+        }
+
+        let mut new_pos = capture_pos.increment(direction)?;
+
+        match (board.get_tile(capture_pos), board.get_tile(new_pos)) {
+            (None, _) => Err(RulesError::Empty(capture_pos))?,
+            (_, Some(_)) => Err(RulesError::Occupied(new_pos))?,
+
+            (Some(other), None) => {
+                if self.is_white == other.is_white {
+                    Err(RulesError::SameColorCapture {
+                        capturing_pos: self.position,
+                        captured_pos: other.position,
+                        is_white: self.is_white,
+                    })?;
+                }
+            }
+        }
+
         let mut captures = Vec::new();
 
-        if !self.is_king {
-            let (x, y) = self.position.as_coordinates();
-            let horizontal = [x > 1, x < 6]; // Leftward, rightward
-            let vertical = [y > 1, y < 6]; // Upward, downward
+        captures.push(CheckersMove {
+            old: self,
+            new: Piece {
+                is_king: self.is_king || new_pos.is_promoting(self),
+                is_white: self.is_white,
+                position: new_pos,
+            },
+            captures: HashSet::from([capture_pos]),
+        });
 
-            for i in 0..4 {
-                if horizontal[i / 2] && vertical[i % 2] {
-                    let capture_x = if i / 2 == 0 { x - 1 } else { x + 1 };
-                    let capture_y = if i % 2 == 0 { y - 1 } else { y + 1 };
-
-                    let capture_pos = (capture_x, capture_y);
-                    let new_pos = (capture_x * 2 - x, capture_y * 2 - y);
-
-                    if let Some(capture) = Self::checked_capture(&self, board, capture_pos, new_pos)
-                    {
-                        captures.push(capture);
-                    }
+        if self.is_king {
+            while let Ok(temp) = new_pos.increment(direction) {
+                new_pos = temp;
+                if board.get_tile(new_pos).is_some() {
+                    break;
                 }
-            }
 
-            captures
-        } else {
-            Vec::new() // ! TEMPORARY
-                       // TODO Add kings
+                let mut next_move = captures[0].clone();
+                next_move.new.position = new_pos;
+
+                captures.push(next_move);
+            }
         }
+
+        Ok(captures)
     }
 
-    pub fn possible_moves(&self, board: &Board) -> Vec<CheckersMove> {
-        let mut moves = self.possible_captures(board);
+    #[must_use]
+    fn capture_in_all_directions(self, board: &Board) -> Vec<CheckersMove> {
+        let mut all_captures = Vec::new();
 
-        if !moves.is_empty() {
-            for (i, capture) in moves.clone().iter().enumerate() {
-                let (x, y) = capture.new_pos.as_coordinates();
-
-                let board_next = board.applied_move(capture);
-                let piece_next = board_next.grid[y][x].unwrap();
-
-                let mut recursive_moves = piece_next.possible_moves(&board_next);
-
-                let mut captured_any = false;
-                for recursive_move in recursive_moves.iter() {
-                    if !recursive_move.captures.is_empty() {
-                        captured_any = true;
-                    }
-                }
-
-                let CheckersMove { captures, .. } = moves.remove(i);
-
-                if captured_any {
-                    for recursive_move in recursive_moves.iter_mut() {
-                        let mut captures = captures.clone();
-                        captures.append(&mut recursive_move.captures);
-
-                        moves.push(CheckersMove {
-                            old_pos: self.position,
-                            new_pos: recursive_move.new_pos,
-                            piece: &self,
-                            captures,
-                        });
-                    }
-                } else {
-                    moves.push(CheckersMove {
-                        old_pos: self.position,
-                        new_pos: piece_next.position,
-                        piece: &self,
-                        captures: captures,
-                    })
-                }
-            }
-        } else {
-            let next_y = Self::next_y(&self, None);
-            let self_x = self.position.as_coordinates().0;
-
-            // To the left
-            if self_x > 0 {
-                let new_pos = (self_x - 1, next_y);
-
-                if board.grid[new_pos.1][new_pos.0].is_none() {
-                    moves.push(CheckersMove {
-                        old_pos: self.position,
-                        new_pos: Position::from_coordinates(new_pos).unwrap(),
-                        piece: &self,
-                        captures: Vec::new(),
-                    });
-                }
-            }
-
-            // To the right
-            if self_x < 7 {
-                let new_pos = (self_x + 1, next_y);
-
-                if board.grid[new_pos.1][new_pos.0].is_none() {
-                    moves.push(CheckersMove {
-                        old_pos: self.position,
-                        new_pos: Position::from_coordinates(new_pos).unwrap(),
-                        piece: &self,
-                        captures: Vec::new(),
-                    });
-                }
+        for direction in iproduct!([-1, 1], [-1, 1]) {
+            if let Ok(mut captures) = self.capture_in_direction(board, direction) {
+                all_captures.append(&mut captures);
             }
         }
 
-        moves
+        all_captures
+    }
+
+    #[must_use]
+    #[allow(clippy::missing_panics_doc)]
+    pub fn all_possible_moves(self, board: &Board) -> Vec<CheckersMove> {
+        let possible_captures = self.capture_in_all_directions(board);
+        let mut all_possible_moves = Vec::new();
+
+        // if piece can't capture
+        if possible_captures.is_empty() {
+            for direction in iproduct!([-1, 1], [-1, 1]) {
+                if let Ok(mut moves) = self.moves(board, direction) {
+                    all_possible_moves.append(&mut moves);
+                }
+            }
+
+            return all_possible_moves;
+        }
+
+        // if piece can capture
+        for current_capture in possible_captures {
+            let board_next = board.clone().applied_move_unchecked(&current_capture);
+            let piece_next =
+                unsafe { board_next.get_tile_unchecked(current_capture.new_piece().position) };
+            // SAFETY: ↑ tile at `capture.new.position` in `board_next` is presumed to never be empty
+
+            let mut recursive_captures = piece_next
+                .all_possible_moves(&board_next)
+                .into_iter()
+                .filter(|i| !i.captures.is_empty())
+                .collect::<Vec<_>>();
+
+            for recursive_capture in &mut recursive_captures {
+                recursive_capture.old = current_capture.old_piece();
+                recursive_capture
+                    .captures
+                    .extend(current_capture.captures.clone());
+            }
+
+            if recursive_captures.is_empty() {
+                recursive_captures.push(current_capture);
+            }
+
+            all_possible_moves.append(&mut recursive_captures);
+        }
+
+        all_possible_moves
     }
 }
 
